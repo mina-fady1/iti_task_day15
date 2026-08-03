@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Cyber Arcade - Select Your Game{% endblock %}
+
+{% block content %}
+<section class="page-header animate-fade-in">
+    <h1 class="page-title">CYBER ARCADE PORTAL</h1>
+    <p class="page-subtitle">Select an interactive Django web game below and challenge your skills in PvP or AI modes.</p>
+</section>
+
+<!-- Hero Featured Section -->
+<div class="hub-hero glass-card animate-fade-in" style="margin-bottom: 3rem;">
+    <div class="hero-content">
+        <div class="hero-text">
+            <span class="hero-tag"><i class="fa-solid fa-bolt"></i> Django Day 1 Lab &bull; ITI</span>
+            <h2>3 Next-Gen Web Games Built with Django</h2>
+            <p>Featuring real-time DTL rendering, interactive state handling, responsive CSS glassmorphism, and custom game engines.</p>
+        </div>
+        <div class="hero-stats">
+            <div class="hero-stat-card">
+                <span class="stat-number">3</span>
+                <span class="stat-label">Full Games</span>
+            </div>
+            <div class="hero-stat-card">
+                <span class="stat-number">100%</span>
+                <span class="stat-label">Interactive</span>
+            </div>
+            <div class="hero-stat-card">
+                <span class="stat-number">v5.0+</span>
+                <span class="stat-label">Django Powered</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Games Grid -->
+<div class="games-grid">
+    {% for game in games %}
+    <div class="game-card glass-card animate-fade-in" id="game-card-{{ game.id }}">
+        <div class="game-card-header">
+            <div class="game-icon-box" style="background: rgba(255, 255, 255, 0.05); color: {{ game.badge_color }};">
+                <i class="{{ game.icon }}"></i>
+            </div>
+            <span class="game-badge" style="background: {{ game.badge_color }}; color: #fff;">{{ game.badge }}</span>
+        </div>
+        
+        <h3 class="game-title">{{ game.title }}</h3>
+        <p class="game-description">{{ game.description }}</p>
+        
+        <div class="game-features">
+            {% for stat in game.stats %}
+            <span class="feature-chip"><i class="fa-solid fa-check"></i> {{ stat }}</span>
+            {% endfor %}
+        </div>
+        
+        <div class="game-card-footer">
+            <a href="{% url game.url %}" class="btn btn-primary btn-play" id="play-btn-{{ game.id }}">
+                <i class="fa-solid fa-play"></i> Play Game
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.hub-hero {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(236, 72, 153, 0.15) 100%);
+    border: 1px solid var(--border-glow);
+}
+
+.hero-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+.hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 50px;
+    background: rgba(99, 102, 241, 0.2);
+    color: var(--primary);
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(99, 102, 241, 0.4);
+}
+
+.hero-text h2 {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.75rem;
+}
+
+.hero-text p {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    max-width: 550px;
+    line-height: 1.6;
+}
+
+.hero-stats {
+    display: flex;
+    gap: 1.25rem;
+}
+
+.hero-stat-card {
+    background: rgba(11, 15, 25, 0.6);
+    border: 1px solid var(--border-glass);
+    padding: 1.25rem 1.5rem;
+    border-radius: var(--radius-md);
+    text-align: center;
+    min-width: 100px;
+}
+
+.stat-number {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--primary);
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+}
+
+.game-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.game-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.game-icon-box {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    border: 1px solid var(--border-glass);
+}
+
+.game-badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.game-title {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+.game-description {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+    flex-grow: 1;
+}
+
+.game-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.feature-chip {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.feature-chip i {
+    color: var(--emerald-accent);
+    font-size: 0.75rem;
+}
+
+.btn-play {
+    width: 100%;
+}
+
+@media (max-width: 900px) {
+    .hero-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    .hero-text p {
+        margin: 0 auto;
+    }
+}
+</style>
+{% endblock %}

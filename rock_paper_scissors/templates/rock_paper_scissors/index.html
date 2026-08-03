@@ -1,0 +1,442 @@
+{% extends "base.html" %}
+
+{% block title %}RPS Supreme - Django Game{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<section class="page-header animate-fade-in">
+    <h1 class="page-title">RPS SUPREME</h1>
+    <p class="page-subtitle">Master the elemental hands! Battle against AI in Classic Rock-Paper-Scissors or RPSLS mode.</p>
+</section>
+
+<div class="rps-container animate-fade-in">
+    <!-- Mode Selector -->
+    <div class="mode-selector glass-card">
+        <button type="button" class="mode-btn active" id="mode-classic" onclick="setRpsMode('classic')">
+            <i class="fa-solid fa-gamepad"></i> Classic (3 Choices)
+        </button>
+        <button type="button" class="mode-btn" id="mode-rpsls" onclick="setRpsMode('rpsls')">
+            <i class="fa-solid fa-hand-spock"></i> RPSLS (5 Choices)
+        </button>
+    </div>
+
+    <!-- Scoreboard & Streak -->
+    <div class="scoreboard glass-card">
+        <div class="score-box score-win">
+            <span class="player-name">Wins</span>
+            <span class="score-num" id="score-wins">0</span>
+        </div>
+        <div class="score-box score-loss">
+            <span class="player-name">Losses</span>
+            <span class="score-num" id="score-losses">0</span>
+        </div>
+        <div class="score-box score-draw">
+            <span class="player-name">Draws</span>
+            <span class="score-num" id="score-draws">0</span>
+        </div>
+        <div class="score-box score-streak">
+            <span class="player-name">Streak</span>
+            <span class="score-num" id="score-streak">🔥 0</span>
+        </div>
+    </div>
+
+    <!-- Battle Arena -->
+    <div class="arena glass-card">
+        <div class="fighter player-fighter">
+            <span class="fighter-label">YOU</span>
+            <div class="choice-display" id="player-display">
+                <i class="fa-solid fa-user-astronaut"></i>
+            </div>
+        </div>
+        <div class="versus-box">
+            <span class="vs-text">VS</span>
+            <div class="result-badge" id="result-badge">SELECT YOUR HAND</div>
+        </div>
+        <div class="fighter cpu-fighter">
+            <span class="fighter-label">CYBER CPU</span>
+            <div class="choice-display" id="cpu-display">
+                <i class="fa-solid fa-microchip"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Choice Cards Selector -->
+    <div class="choices-container glass-card">
+        <span class="section-label">Choose your hand:</span>
+        <div class="choices-grid" id="choices-grid">
+            {% for key, val in choices.items %}
+            <button type="button" class="choice-card {% if key == 'lizard' or key == 'spock' %}rpsls-only{% endif %}"
+                    id="btn-choice-{{ key }}" onclick="playHand('{{ key }}')">
+                <div class="choice-icon" style="color: {{ val.color }};">
+                    <i class="{{ val.icon }}"></i>
+                </div>
+                <span class="choice-name">{{ val.name }}</span>
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Match History Log -->
+    <div class="history-container glass-card">
+        <div class="history-header">
+            <h3><i class="fa-solid fa-list-check"></i> Battle Log</h3>
+            <button type="button" class="btn btn-outline btn-sm" onclick="clearHistory()">Clear Log</button>
+        </div>
+        <div class="history-log" id="history-log">
+            <p class="empty-log">No battles recorded yet. Make your move above!</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.rps-container {
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.scoreboard {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 1rem;
+    gap: 0.75rem;
+    text-align: center;
+}
+
+.score-win .score-num { color: var(--emerald-accent); }
+.score-loss .score-num { color: var(--secondary); }
+.score-streak .score-num { color: var(--amber-accent); }
+
+.arena {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(18, 26, 43, 0.9), rgba(11, 15, 25, 0.9));
+}
+
+.fighter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.fighter-label {
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+}
+
+.choice-display {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(11, 15, 25, 0.6);
+    border: 2px solid var(--border-glass);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.75rem;
+    color: var(--text-muted);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.choice-display.win {
+    border-color: var(--emerald-accent);
+    box-shadow: 0 0 25px rgba(16, 185, 129, 0.6);
+    transform: scale(1.1);
+}
+
+.choice-display.lose {
+    border-color: var(--secondary);
+    box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
+    opacity: 0.7;
+}
+
+.versus-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.vs-text {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--primary);
+    text-shadow: 0 0 10px var(--primary-glow);
+}
+
+.result-badge {
+    padding: 0.4rem 0.85rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-glass);
+    color: var(--text-main);
+    text-align: center;
+    white-space: nowrap;
+}
+
+.result-badge.win {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: var(--emerald-accent);
+    color: var(--emerald-accent);
+}
+
+.result-badge.lose {
+    background: rgba(236, 72, 153, 0.2);
+    border-color: var(--secondary);
+    color: var(--secondary);
+}
+
+.result-badge.draw {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: var(--amber-accent);
+    color: var(--amber-accent);
+}
+
+.choices-container {
+    padding: 1.5rem;
+}
+
+.section-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+}
+
+.choices-grid {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.choice-card {
+    flex: 1;
+    min-width: 90px;
+    max-width: 120px;
+    padding: 1.25rem 0.75rem;
+    background: rgba(11, 15, 25, 0.6);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.25s ease;
+}
+
+.choice-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--border-glow);
+    transform: translateY(-4px);
+}
+
+.choice-icon {
+    font-size: 2rem;
+}
+
+.choice-name {
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.rpsls-only {
+    display: none;
+}
+
+.mode-rpsls .rpsls-only {
+    display: flex;
+}
+
+.history-container {
+    padding: 1.25rem;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.history-header h3 {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.btn-sm {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.8rem;
+}
+
+.history-log {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.log-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0.85rem;
+    background: rgba(11, 15, 25, 0.4);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--border-glass);
+    font-size: 0.85rem;
+}
+
+.log-item.win { border-left-color: var(--emerald-accent); }
+.log-item.lose { border-left-color: var(--secondary); }
+.log-item.draw { border-left-color: var(--amber-accent); }
+
+.empty-log {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 1rem;
+}
+
+@media (max-width: 600px) {
+    .arena {
+        padding: 1rem;
+    }
+    .choice-display {
+        width: 70px;
+        height: 70px;
+        font-size: 1.75rem;
+    }
+    .scoreboard {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let rpsMode = 'classic';
+let rpsScores = { wins: 0, losses: 0, draws: 0, streak: 0 };
+
+function setRpsMode(mode) {
+    rpsMode = mode;
+    document.getElementById('mode-classic').classList.toggle('active', mode === 'classic');
+    document.getElementById('mode-rpsls').classList.toggle('active', mode === 'rpsls');
+    document.getElementById('choices-grid').classList.toggle('mode-rpsls', mode === 'rpsls');
+    resetArena();
+}
+
+async function playHand(userChoice) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const playerDisp = document.getElementById('player-display');
+    const cpuDisp = document.getElementById('cpu-display');
+    const badge = document.getElementById('result-badge');
+
+    playerDisp.className = 'choice-display';
+    cpuDisp.className = 'choice-display';
+    badge.className = 'result-badge';
+    badge.innerText = 'BATTLE...';
+
+    try {
+        const response = await fetch('/rps/api/play/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ choice: userChoice, mode: rpsMode })
+        });
+        const data = await response.json();
+
+        if (data.result) {
+            playerDisp.innerHTML = `<i class="${data.user_choice.icon}" style="color: ${data.user_choice.color};"></i>`;
+            cpuDisp.innerHTML = `<i class="${data.computer_choice.icon}" style="color: ${data.computer_choice.color};"></i>`;
+
+            if (data.result === 'win') {
+                playerDisp.classList.add('win');
+                cpuDisp.classList.add('lose');
+                badge.classList.add('win');
+                badge.innerText = `YOU WIN! (${data.user_choice.name} ${data.action} ${data.computer_choice.name})`;
+                rpsScores.wins++;
+                rpsScores.streak++;
+            } else if (data.result === 'lose') {
+                playerDisp.classList.add('lose');
+                cpuDisp.classList.add('win');
+                badge.classList.add('lose');
+                badge.innerText = `YOU LOSE! (${data.computer_choice.name} ${data.action} ${data.user_choice.name})`;
+                rpsScores.losses++;
+                rpsScores.streak = 0;
+            } else {
+                badge.classList.add('draw');
+                badge.innerText = `TIE GAME! Both picked ${data.user_choice.name}`;
+                rpsScores.draws++;
+            }
+
+            updateRpsScores();
+            addHistoryLog(data);
+        }
+    } catch (err) {
+        console.error("RPS Play error:", err);
+    }
+}
+
+function updateRpsScores() {
+    document.getElementById('score-wins').innerText = rpsScores.wins;
+    document.getElementById('score-losses').innerText = rpsScores.losses;
+    document.getElementById('score-draws').innerText = rpsScores.draws;
+    document.getElementById('score-streak').innerText = `🔥 ${rpsScores.streak}`;
+}
+
+function resetArena() {
+    document.getElementById('player-display').innerHTML = '<i class="fa-solid fa-user-astronaut"></i>';
+    document.getElementById('player-display').className = 'choice-display';
+    document.getElementById('cpu-display').innerHTML = '<i class="fa-solid fa-microchip"></i>';
+    document.getElementById('cpu-display').className = 'choice-display';
+    document.getElementById('result-badge').className = 'result-badge';
+    document.getElementById('result-badge').innerText = 'SELECT YOUR HAND';
+}
+
+function addHistoryLog(data) {
+    const logContainer = document.getElementById('history-log');
+    const emptyMsg = logContainer.querySelector('.empty-log');
+    if (emptyMsg) emptyMsg.remove();
+
+    const item = document.createElement('div');
+    item.className = `log-item ${data.result}`;
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    let outcomeText = data.result.toUpperCase();
+    item.innerHTML = `
+        <span><strong>${time}</strong> &bull; ${data.user_choice.name} vs ${data.computer_choice.name}</span>
+        <span class="badge-${data.result}"><strong>${outcomeText}</strong></span>
+    `;
+
+    logContainer.prepend(item);
+}
+
+function clearHistory() {
+    document.getElementById('history-log').innerHTML = '<p class="empty-log">No battles recorded yet. Make your move above!</p>';
+}
+</script>
+{% endblock %}

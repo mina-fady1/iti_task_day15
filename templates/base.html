@@ -1,0 +1,65 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cyber Arcade - 3-in-1 Django Game Hub{% endblock %}</title>
+    <meta name="description" content="An interactive suite of 3 Django games built with modern glassmorphism design.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Background Animated Glow Orbs -->
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-glow bg-glow-3"></div>
+
+    <!-- Navigation Header -->
+    <header class="navbar-header">
+        <nav class="navbar nav-container">
+            <a href="{% url 'hub:index' %}" class="nav-brand" id="nav-brand-logo">
+                <span class="brand-icon"><i class="fa-solid fa-gamepad"></i></span>
+                <span class="brand-title">CYBER<span class="brand-accent">ARCADE</span></span>
+            </a>
+            
+            <div class="nav-links">
+                <a href="{% url 'hub:index' %}" class="nav-link {% if request.resolver_match.app_name == 'hub' %}active{% endif %}" id="nav-home">
+                    <i class="fa-solid fa-house"></i> <span>Home</span>
+                </a>
+                <a href="{% url 'tictactoe:index' %}" class="nav-link {% if request.resolver_match.app_name == 'tictactoe' %}active{% endif %}" id="nav-tictactoe">
+                    <i class="fa-solid fa-xmark"></i><i class="fa-regular fa-circle"></i> <span>XO Cyber Duel</span>
+                </a>
+                <a href="{% url 'memory_match:index' %}" class="nav-link {% if request.resolver_match.app_name == 'memory_match' %}active{% endif %}" id="nav-memory">
+                    <i class="fa-solid fa-brain"></i> <span>Memory Match</span>
+                </a>
+                <a href="{% url 'rock_paper_scissors:index' %}" class="nav-link {% if request.resolver_match.app_name == 'rock_paper_scissors' %}active{% endif %}" id="nav-rps">
+                    <i class="fa-solid fa-hand-back-fist"></i> <span>RPS Supreme</span>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer-container">
+        <div class="footer-content">
+            <p><i class="fa-solid fa-code"></i> Django Arcade Suite &bull; Full Stack Web Development with Python &bull; ITI Lab 1</p>
+            <p class="footer-subtext">&copy; 2026 CyberArcade. Built with Django &amp; Vanilla CSS.</p>
+        </div>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

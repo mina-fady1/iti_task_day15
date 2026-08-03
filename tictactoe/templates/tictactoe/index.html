@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block title %}XO Cyber Duel - Django Game{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<section class="page-header animate-fade-in">
+    <h1 class="page-title">XO CYBER DUEL</h1>
+    <p class="page-subtitle">Battle your friend locally or test your strategy against the unbeatable Minimax AI Engine.</p>
+</section>
+
+<div class="tictactoe-container animate-fade-in">
+    <!-- Game Mode Switcher -->
+    <div class="mode-selector glass-card">
+        <button type="button" class="mode-btn active" id="mode-pvp" onclick="setMode('pvp')">
+            <i class="fa-solid fa-users"></i> Player vs Player
+        </button>
+        <button type="button" class="mode-btn" id="mode-ai" onclick="setMode('ai')">
+            <i class="fa-solid fa-robot"></i> Player vs Cyber AI
+        </button>
+    </div>
+
+    <!-- Scoreboard -->
+    <div class="scoreboard glass-card">
+        <div class="score-box score-x">
+            <span class="player-name" id="label-x">Player X</span>
+            <span class="score-num" id="score-x">0</span>
+        </div>
+        <div class="score-box score-draw">
+            <span class="player-name">Ties</span>
+            <span class="score-num" id="score-draw">0</span>
+        </div>
+        <div class="score-box score-o">
+            <span class="player-name" id="label-o">Player O</span>
+            <span class="score-num" id="score-o">0</span>
+        </div>
+    </div>
+
+    <!-- Status Banner -->
+    <div class="status-banner glass-card" id="status-banner">
+        <span id="status-text">Turn: Player X</span>
+    </div>
+
+    <!-- Game Board -->
+    <div class="board-wrapper glass-card">
+        <div class="board" id="board">
+            {% for i in "012345678" %}
+            <button type="button" class="cell" data-index="{{ forloop.counter0 }}" onclick="makeMove({{ forloop.counter0 }})" id="cell-{{ forloop.counter0 }}"></button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="controls">
+        <button type="button" class="btn btn-outline" onclick="resetGame()">
+            <i class="fa-solid fa-rotate-right"></i> Reset Round
+        </button>
+        <button type="button" class="btn btn-outline" onclick="resetScores()">
+            <i class="fa-solid fa-trash-can"></i> Reset Scores
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.tictactoe-container {
+    max-width: 520px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.mode-selector {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.6rem;
+}
+
+.mode-btn {
+    flex: 1;
+    padding: 0.75rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.mode-btn.active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(236, 72, 153, 0.25));
+    border-color: var(--border-glow);
+    color: #fff;
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+}
+
+.scoreboard {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 1rem;
+    gap: 1rem;
+    text-align: center;
+}
+
+.score-box {
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    background: rgba(11, 15, 25, 0.5);
+    border: 1px solid var(--border-glass);
+}
+
+.score-x { border-color: var(--cyan-accent); }
+.score-o { border-color: var(--secondary); }
+
+.player-name {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.score-num {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    font-weight: 800;
+}
+
+.score-x .score-num { color: var(--cyan-accent); }
+.score-o .score-num { color: var(--secondary); }
+
+.status-banner {
+    padding: 0.85rem;
+    text-align: center;
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.board-wrapper {
+    padding: 1.5rem;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.85rem;
+    aspect-ratio: 1 / 1;
+}
+
+.cell {
+    background: rgba(11, 15, 25, 0.6);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-md);
+    font-family: var(--font-heading);
+    font-size: 2.75rem;
+    font-weight: 900;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.cell:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--border-glow);
+    transform: scale(1.02);
+}
+
+.cell.x {
+    color: var(--cyan-accent);
+    text-shadow: 0 0 20px rgba(6, 182, 212, 0.8);
+}
+
+.cell.o {
+    color: var(--secondary);
+    text-shadow: 0 0 20px rgba(236, 72, 153, 0.8);
+}
+
+.cell.winning {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(6, 182, 212, 0.3));
+    border-color: var(--emerald-accent);
+    animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.05); }
+}
+
+.controls {
+    display: flex;
+    gap: 1rem;
+}
+
+.controls button {
+    flex: 1;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let boardState = ["", "", "", "", "", "", "", "", ""];
+let currentPlayer = 'X';
+let gameMode = 'pvp';
+let isGameOver = false;
+let scores = { X: 0, O: 0, draw: 0 };
+
+const winPatterns = [
+    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+    [0, 4, 8], [2, 4, 6]
+];
+
+function setMode(mode) {
+    gameMode = mode;
+    document.getElementById('mode-pvp').classList.toggle('active', mode === 'pvp');
+    document.getElementById('mode-ai').classList.toggle('active', mode === 'ai');
+    document.getElementById('label-o').innerText = mode === 'ai' ? 'Cyber AI' : 'Player O';
+    resetGame();
+}
+
+function makeMove(index) {
+    if (boardState[index] !== "" || isGameOver) return;
+
+    executeMove(index, currentPlayer);
+
+    if (checkWin(currentPlayer)) {
+        handleWin(currentPlayer);
+        return;
+    }
+
+    if (boardState.every(cell => cell !== "")) {
+        handleTie();
+        return;
+    }
+
+    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+    updateStatus();
+
+    if (gameMode === 'ai' && currentPlayer === 'O' && !isGameOver) {
+        disableBoard(true);
+        fetchAiMove();
+    }
+}
+
+function executeMove(index, player) {
+    boardState[index] = player;
+    const cell = document.getElementById(`cell-${index}`);
+    cell.innerText = player;
+    cell.classList.add(player.toLowerCase());
+}
+
+async function fetchAiMove() {
+    document.getElementById('status-text').innerText = "Cyber AI is thinking...";
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    try {
+        const response = await fetch('/tictactoe/api/ai-move/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ board: boardState })
+        });
+        const data = await response.json();
+        disableBoard(false);
+
+        if (data.move !== undefined && data.move !== -1) {
+            executeMove(data.move, 'O');
+            if (checkWin('O')) {
+                handleWin('O');
+            } else if (boardState.every(cell => cell !== "")) {
+                handleTie();
+            } else {
+                currentPlayer = 'X';
+                updateStatus();
+            }
+        }
+    } catch (err) {
+        console.error("AI move error:", err);
+        disableBoard(false);
+    }
+}
+
+function checkWin(player) {
+    return winPatterns.find(pattern => {
+        return pattern.every(index => boardState[index] === player);
+    });
+}
+
+function handleWin(player) {
+    isGameOver = true;
+    const winningPattern = checkWin(player);
+    if (winningPattern) {
+        winningPattern.forEach(idx => {
+            document.getElementById(`cell-${idx}`).classList.add('winning');
+        });
+    }
+    const name = player === 'X' ? 'Player X' : (gameMode === 'ai' ? 'Cyber AI' : 'Player O');
+    document.getElementById('status-text').innerText = `🎉 ${name} Wins!`;
+    scores[player]++;
+    updateScores();
+}
+
+function handleTie() {
+    isGameOver = true;
+    document.getElementById('status-text').innerText = "🤝 It's a Tie!";
+    scores.draw++;
+    updateScores();
+}
+
+function updateStatus() {
+    const name = currentPlayer === 'X' ? 'Player X' : (gameMode === 'ai' ? 'Cyber AI' : 'Player O');
+    document.getElementById('status-text').innerText = `Turn: ${name}`;
+}
+
+function updateScores() {
+    document.getElementById('score-x').innerText = scores.X;
+    document.getElementById('score-o').innerText = scores.O;
+    document.getElementById('score-draw').innerText = scores.draw;
+}
+
+function resetGame() {
+    boardState = ["", "", "", "", "", "", "", "", ""];
+    currentPlayer = 'X';
+    isGameOver = false;
+    disableBoard(false);
+    for (let i = 0; i < 9; i++) {
+        const cell = document.getElementById(`cell-${i}`);
+        cell.innerText = "";
+        cell.className = "cell";
+    }
+    updateStatus();
+}
+
+function resetScores() {
+    scores = { X: 0, O: 0, draw: 0 };
+    updateScores();
+    resetGame();
+}
+
+function disableBoard(disabled) {
+    for (let i = 0; i < 9; i++) {
+        document.getElementById(`cell-${i}`).disabled = disabled;
+    }
+}
+</script>
+{% endblock %}
